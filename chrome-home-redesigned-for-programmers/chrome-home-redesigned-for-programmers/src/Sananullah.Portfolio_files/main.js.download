@@ -1,0 +1,194 @@
+function webCreatorCheck(res){
+    console.log(res);
+    if (!res.success){
+        location.replace(global("owner_website_url")+"/creator/dashboard");
+    }
+}
+
+if  (window.location.href.indexOf("/edit/") > -1) {
+    if (!getCookie("session_token")){
+        location.replace(global("owner_website_url")+"/creator/dashboard");
+    }
+    var data = {function_name:"webCreatorCheck",session_token:getCookie("session_token"),website_id:$("input[name='website_id']").val(),call_from:"frontend"};
+    rawAjax(data);
+    $.getScript(global("owner_website_url")+"/creator/admin/js/icons.js"); 
+    $.getScript(global("owner_website_url")+"/creator/admin/js/upload_image.js");  
+    $.getScript(global("owner_website_url")+"/creator/admin/js/editor.js");       
+}
+
+function getWebsiteWorksForFrontend(res){
+    for (var i = 0; i < res.data.works.length; i++){
+        var markup = '<div class="card"> <div class="card__header"> <a href="/'+res.data.works[i].path+'"><img src="'+res.data.works[i].image+'" alt="card__image" class="card__image" width="100%"></a> </div> <div class="card__body"> <h5><a style="color:#000000;" href="/'+res.data.works[i].path+'">'+res.data.works[i].title+'</a></h5>';
+
+        // Check if price exists
+        if (res.data.works[i].ecom_options && JSON.parse(res.data.works[i].ecom_options).price) {
+            var ecom_options = JSON.parse(res.data.works[i].ecom_options);
+            var price = ecom_options.price;
+            if (ecom_options.offer_price && ecom_options.offer_price != null){
+                markup += '<div><s><small>'+global("creator_website_currency_from_page")+price+'</small></s> '+global("creator_website_currency_from_page")+ecom_options.offer_price+'</div>';
+            } else {
+                markup += '<div>'+global("creator_website_currency_from_page")+price+'</div>';
+            }
+            markup += '<a href="/'+res.data.works[i].path+'" class="custom_button blue">Buy Now</a>';
+        } else {
+            markup += '<p style="font-size:14px;">'+res.data.works[i].content.replace(/<[^>]+>/g, "").substring(0, 100)+'</p>';
+            markup += '<a href="/'+res.data.works[i].path+'" class="custom_button blue">Read More</a>';
+        }
+
+        markup += '</div> </div>';
+        $(".custom_container").append(markup);
+    }
+    $("#show_more").html('<div id="show_more" style="text-align:center"><a onclick="printWebsiteWorks('+res.data.skip+',\''+res.data.category_name+'\');" id="print_website_works" class="custom_button green">View More</a></div>');
+}
+if  (window.location.href.indexOf("/works/") > -1) {
+    $("#print_website_works").click();
+}
+function getUrlParameter(name) {
+    var currentUrl = window.location.href;
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(currentUrl);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+function printWebsiteWorks(skip,category_name){
+    if($(location).attr('href').indexOf('search') != -1){
+        var search = true;
+    } else {
+        var search = "";
+    }
+    if($(location).attr('href').indexOf('sort') != -1){
+        var sort = getUrlParameter('sort');
+    } else {
+        var sort = "";
+    }
+    var data = {function_name:"getWebsiteWorksForFrontend",website_name:global("creator_website_name_from_page"),website_id:global("creator_website_id_from_page"),call_from:"frontend",controller_name:"ViewController",skip:skip,category_name:category_name,search:search,sort:sort};
+    rawAjax(data);
+}
+    $('#sort').change(function(){
+        var selectedSort = $(this).val();
+        var currentUrl = window.location.href;
+        if (currentUrl.indexOf('sort=') !== -1) {
+        var newUrl = currentUrl.replace(/sort=[^&]+/, 'sort=' + selectedSort);
+        } else {
+        var newUrl = currentUrl + (currentUrl.indexOf('?') !== -1 ? '&' : '?') + 'sort=' + selectedSort;
+        }
+        window.location.href = newUrl;
+    });
+function addToCart(e){
+    e.preventDefault();
+    var variants = [];
+    if ($("input[name=website_id]").val() && $("input[name=work_id]").val()) {
+        if ($("input[name=total_variants]").val() && $("input[name=total_variants]").val() > 0){
+            for (var i = 1;  i <=  $("input[name=total_variants]").val(); i++){
+                var variant = $("select[name=variant_"+i+"]").val().split(":");
+                variant = {"name":variant[0], "value":variant[1]};
+                variants.push(variant);
+            }
+        }
+        if ($("textarea[name=custom_input_name]").val()){
+            var work_custom_input = $("textarea[name=custom_input_name]").val();
+        } else {
+            var work_custom_input = '';
+        }
+        if ($("input[name=variant_price]").val()){
+            var work_price = $("input[name=variant_price]").val();
+        } else {
+            var work_price = $("input[name=work_price]").val();
+        }
+        var cart = JSON.stringify({work_price:work_price,website_id:$("input[name=website_id]").val(), work_id:$("input[name=work_id]").val(), work_quantity:$("input[name=quantity]").val(),work_title:$("input[name=work_title]").val(),work_shipping:$("input[name=work_shipping]").val(),work_tax:$("input[name=work_tax]").val(),work_variants:variants,work_custom_input:work_custom_input});
+        setCookie("cart",cart,30);
+        window.location.assign("/checkout/");
+    }
+}
+if  (window.location.href.indexOf("/checkout/") > -1) {
+    if (!getCookie("cart")){
+        window.location.assign("/");
+    }
+    var cart = JSON.parse(getCookie("cart"));
+    var variants = "";
+    if (cart.work_variants.length > 0){
+        cart.work_variants.forEach(function(element) {
+            variants = variants + " " + element.name + ":" + element.value;
+          });
+    }
+    cart.work_tax = (parseFloat(cart.work_price)*parseFloat(cart.work_tax)/100).toFixed(2);
+    var total_cost = (parseFloat(cart.work_price) + parseFloat(cart.work_tax)) * parseFloat(cart.work_quantity) + parseFloat(cart.work_shipping);
+    var markup = '<h2>'+ cart.work_title +'</h2> <h3>Price: '+ cart.work_price +'</h3> <h3>Tax: '+ cart.work_tax +'</h3><h3>'+ variants +'</h3> <h3>× Quantity: '+ cart.work_quantity +'</h3> <h3>+ Shipping: '+ cart.work_shipping +'</h3> <hr> <h3>Total Cost: '+ total_cost.toFixed(2) +'</h3>';
+    $("#work_details").append(markup);
+}
+if  (window.location.href.indexOf("/checkout/?status=paid") > -1) {
+    var markup = '<h2>Order Successfully Placed</h2>';
+    $("#checkout_form").html(markup);
+    deleteCookie("cart");
+
+}
+function showPaymentGateways(){
+    $("#notice").empty();
+    if (isNaN($("input[name='phone']").val())){
+        var markup = '<br><div class="alert alert-danger" role="alert">Invalid phone number</div>';
+        return $("#notice").html(markup);
+    }
+    if (!isValidEmail($("input[name='email']").val())){
+        var markup = '<br><div class="alert alert-danger" role="alert">Invalid email</div>';
+        return $("#notice").html(markup);
+    }
+    $("#billing").hide();
+    $("#payment_gateways").show();
+    $('html, body').animate({ scrollTop: 0 }, 'slow');
+}
+
+function isValidEmail(email) {
+    // Regular expression for basic email validation
+    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+function createOrder(res){
+    if (res.data[0].payment){
+        var payment = JSON.parse(res.data[0].payment);
+        if (payment.gateway == "cod"){
+            var markup = '<h2>Order Successfully Placed</h2>';
+            $("#checkout_form").html(markup);
+            deleteCookie("cart");
+        } else {
+            if (payment.gateway == "whatsapp"){
+                deleteCookie("cart");
+            }
+            window.location.assign("/order/"+payment.gateway+"/"+res.data[0].id);
+        }
+    }
+}
+function searchWorksSubmit(event) {
+    event.preventDefault();
+    var query = document.getElementById("search_work_query").value;
+    window.location.href = "/works/search/" + encodeURIComponent(query);
+}
+
+function getCurrentURL() {
+    return encodeURIComponent(window.location.href);
+}
+
+function shareOnWhatsApp() {
+    window.open(`https://api.whatsapp.com/send?text=Check%20out%20this%20link:%20${getCurrentURL()}`);
+}
+
+function shareOnFacebook() {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${getCurrentURL()}`);
+}
+
+function shareOnTwitter() {
+    window.open(`https://twitter.com/intent/tweet?url=${getCurrentURL()}&text=Check%20out%20this%20link`);
+}
+
+function toggleShareIcons(element) {
+    element.classList.toggle("active");
+}
+function copyLink() {
+    const copyText = document.createElement('input');
+    copyText.value = window.location.href;
+    document.body.appendChild(copyText);
+    copyText.select();
+    document.execCommand('copy');
+    document.body.removeChild(copyText);
+  }

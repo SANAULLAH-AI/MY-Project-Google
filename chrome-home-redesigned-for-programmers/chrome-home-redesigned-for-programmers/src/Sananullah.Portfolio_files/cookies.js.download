@@ -1,0 +1,63 @@
+function domainName() {
+	return "http://iamlive.local";
+}
+function global(ask) {
+	switch (ask) {
+		case "owner_website_url":
+			if (window.location.hostname.indexOf("iamlive.local") > -1){
+				return "http://iamlive.local";
+			} else {
+				return "https://vq.pe";
+			}
+			break;
+		case "main_website_name":
+			return window.location.hostname;
+			break;
+		case "main_website_url":
+			return window.location.protocol + '//' + window.location.hostname;
+			break;
+		case "creator_website_name":
+			return window.location.hostname.split(".")[0];
+			break;
+		case "creator_website_name_from_page":
+			return $("#website_name").val();
+			break;
+		case "creator_website_id_from_page":
+			return $("#website_id").val();
+			break;
+		case "creator_website_currency_from_page":
+			return $("#website_currency").val();
+			break;				
+		case "creator_website_url":
+			return window.location.protocol + '//' + '' + $("#website_name").val() + '.' + window.location.hostname;
+			break;
+	}
+}
+
+
+function getCookie(cname) {
+	let name = cname + "=";
+	let ca = document.cookie.split(';');
+	for (let i = 0; i < ca.length; i++) {
+		let c = ca[i];
+		while (c.charAt(0) == ' ') {
+			c = c.substring(1);
+		}
+		if (c.indexOf(name) == 0) {
+			return c.substring(name.length, c.length);
+		}
+	}
+	return "";
+}
+
+function checkCookie() {
+	let user = getCookie("username");
+	if (user != "") {
+		alert("Welcome again " + user);
+	} else {
+		user = prompt("Please enter your name:", "");
+		if (user != "" && user != null) {
+			setCookie("username", user, 365);
+		}
+	}
+}

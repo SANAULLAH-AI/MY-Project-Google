@@ -1,0 +1,72 @@
+function rawAjax(data){  
+    if (!data.controller_name){
+        data.controller_name = "WebsiteController";
+    }
+    $.ajax({
+        url: "/creator/api/v1/"+data.controller_name+"/"+data.function_name,
+        type:'POST',
+        data: data,
+            success: function(response) {
+                var res = JSON.parse(response);
+                window[data.function_name](res);
+            }
+    });
+}
+function formAjax(e,form){
+    e.preventDefault();
+    if ($(form).attr("action")&&($(form).attr("action")=="delete"||$(form).attr("action")=="reset")){
+        if (!confirm("Do you want to "+$(form).attr("action")+"?")){
+            return false;
+        }
+    }
+  
+    }  
+    var formdata = new FormData(form);
+    if ($(form).attr("function_name") == "signup"){
+        if(getCookie("http_referer")){
+            formdata.append("http_referer", getCookie("http_referer"));
+        }
+        if(getCookie("refer")){
+            formdata.append("refer", getCookie("refer"));
+        }
+    } else if ($(form).attr("function_name") != "login" && $(form).attr("controller_name") != "ActionController"){
+        formdata.append("session_token", getCookie("session_token"));
+    }
+    formdata.append("controller_name", $(form).attr("controller_name"));
+    var function_name = $(form).attr("function_name");
+    formdata.append("function_name", function_name);
+    if ($(form).attr("notice_div")){
+        var notice_div = "#"+$(form).attr("notice_div");
+    } else {
+        var notice_div = "#notice";
+    }
+    $(notice_div).empty();
+    $.ajax({
+        url: "/creator/api/v1/"+$(form).attr("controller_name")+"/"+function_name,
+        type:'POST',
+        data: formdata,
+        cache:false,
+        contentType: false,
+        processData: false,
+
+        beforeSend: function(){
+            $(notice_div).html("<img src='/creator/admin/img/loaderbar.gif' style='width:100%;height:20px;'>");
+        },
+        success: function(response) { 
+            var res = JSON.parse(response);
+            if (res.success){
+                if (!$(form).attr("after_reset")){
+                    $(form).trigger('reset');
+                }
+                var markup = '<div class="alert alert-success" role="alert">'+res.message+'</div>';
+            } else {
+                var markup = '<div class="alert alert-danger" role="alert">'+res.error+'</div>';
+            }
+            $(notice_div).html(markup);
+            
+            if (res.data){
+                window[function_name](res);
+            }
+        }
+    });
+}
