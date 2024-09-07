@@ -197,6 +197,7 @@ button, a, input {
   gap: 0.2rem;
   grid-template-columns: repeat(2, 50%);  
   margin: 3rem 0rem;
+  
 }
 
 #apps-container > a {
@@ -244,6 +245,7 @@ button, a, input {
 
 #apps-container > a:is(:hover, :focus) {
   background-color: rgb(255 255 255 / 16%);
+  transform:scale(1.1);
 }
 
 #apps-container > a:first-child {
@@ -402,6 +404,7 @@ button, a, input {
 }
 .social-button:focus, .social-button:hover {
   color: #fff;
+  transform:scale(1.4);
 }
 .social-button:focus::after, .social-button:hover::after {
   width: calc(100% + 2px);
